@@ -17,10 +17,10 @@ Integrate and use the JSL in Jenkins Pipeline
 Configure Webhook to trigger CI Pipeline automatically on
 every change
 Technologies used:
-Jenkins, GitLab, Git, Docker, Java, Maven
+Jenkins, Githun, Git, Docker, Java, Maven
 Project Description:
-Install GitLab Plugin in Jenkins
-Configure GitLab access token and connection to
+Install Github Plugin in Jenkins
+Configure Github access token and connection to
 Jenkins in GitLab project settings
 Configure Jenkins to trigger trigger the CI pipeline, whenever a
 change is pushed to Github
@@ -28,7 +28,7 @@ change is pushed to Github
 ## Demo Project:
 Dynamically Increment Application version in Jenkins Pipeline
 Technologies used:
-Jenkins, Docker, GitLab, Git, Java, Maven
+Jenkins, Docker, Github, Git, Java, Maven
 Project Description:
 Configure CI step: Increment patch version
 Configure CI step: Build Java application and clean old artifacts
