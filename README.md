@@ -22,7 +22,8 @@ Project Description:
 Install GitLab Plugin in Jenkins
 Configure GitLab access token and connection to
 Jenkins in GitLab project settings
-Configure Jenkins to trigger t
+Configure Jenkins to trigger trigger the CI pipeline, whenever a
+change is pushed to Github
 
 ## Demo Project:
 Dynamically Increment Application version in Jenkins Pipeline
