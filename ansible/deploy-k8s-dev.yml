@@ -1,0 +1,44 @@
+---
+- name: Deploy to Kubernetes cluster (Dev)
+  hosts: k8s
+  gather_facts: no
+  vars:
+    k8s_namespace: default           # Can be overridden via -e
+    full_image: ""                   # Must be passed in via Jenkins or CLI
+    nodeport: 30000                  # Must be passed in via Jenkins or CLI
+    deployment_template: check-order-app-deployment.yaml.j2
+    rendered_file: "/tmp/rendered-{{ k8s_namespace }}.yaml"
+
+  tasks:
+    - name: Apply deployment
+      shell: |
+        kubectl cluster-info
+        kubectl get pods -n {{ k8s_namespace }}
+      register: kubectl_output
+      ignore_errors: yes
+
+    - name: Ensure namespace exists
+      shell: |
+        if ! kubectl get namespace {{ k8s_namespace }} > /dev/null 2>&1; then
+          kubectl create namespace {{ k8s_namespace }}
+        fi
+      register: ns_create
+      changed_when: "'created' in ns_create.stdout or 'created' in ns_create.stderr"
+
+    - name: Render Kubernetes deployment from template
+      template:
+        src: "templates/{{ deployment_template }}"
+        dest: "{{ rendered_file }}"
+
+    - name: Apply rendered deployment YAML
+      command: kubectl apply -f {{ rendered_file }}
+
+    - name: Print current pods in namespace
+      shell: |
+        echo "==== Current Pods in {{ k8s_namespace }} ===="
+        kubectl get pods -n {{ k8s_namespace }}
+      register: pod_output
+
+    - name: Show pods
+      debug:
+        msg: "{{ pod_output.stdout_lines }}"

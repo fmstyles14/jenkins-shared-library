@@ -1,0 +1,54 @@
+---
+- name: Deploy to Kubernetes UAT/PROD
+  hosts: k8s
+  become: yes
+  vars:
+    rendered_yaml_path: "/tmp/rendered-{{ k8s_namespace }}.yaml"
+    deployment_template: check-order-app-deployment.yaml.j2
+
+
+  tasks:
+    - name: Apply deployment
+      shell: |
+        kubectl cluster-info
+        kubectl get pods -n {{ k8s_namespace }}
+      register: kubectl_output
+      ignore_errors: yes
+
+    - name: Ensure namespace exists
+      shell: |
+        if ! kubectl get ns {{ k8s_namespace }}; then
+          kubectl create ns {{ k8s_namespace }}
+        fi
+      ignore_errors: false
+
+    - name: Render Kubernetes deployment from template
+      template:
+        src: "templates/{{ deployment_template }}"
+        dest: "{{ rendered_yaml_path }}"
+        mode: 0644
+      vars:
+        namespace: "{{ k8s_namespace }}"
+        image: "{{ full_image }}"
+        nodeport: "{{ nodeport | default('30010') }}"
+
+    - name: Apply Kubernetes deployment
+      shell: |
+        echo "Applying deployment YAML..."
+        kubectl apply -f {{ rendered_yaml_path }}
+
+    - name: Print deployed image
+      shell: |
+        kubectl get deployment check-orders-service -n {{ k8s_namespace }} -o=jsonpath='{.spec.template.spec.containers[0].image}'
+      register: deployed_image
+      changed_when: false
+
+    - name: Show deployed image
+      debug:
+        msg: "Deployed image: {{ deployed_image.stdout }}"
+
+    - name: Print current pods in namespace
+      shell: |
+        echo "==== Current Pods in {{ k8s_namespace }} ===="
+        kubectl get pods -n {{ k8s_namespace }}
+      register: pod_output

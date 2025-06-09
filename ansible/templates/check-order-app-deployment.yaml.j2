@@ -1,0 +1,99 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: check-orders-micro-app
+  namespace: {{ k8s_namespace }}
+  labels:
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: check-orders-micro-app
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: check-orders-micro-app
+        version: v1
+    spec:
+      volumes:
+        - name: check-orders-micro-app-logs-pv
+          persistentVolumeClaim:
+            claimName: check-orders-micro-app-logs-pvc-{{ k8s_namespace }}
+      containers:
+        - name: check-orders-micro-app
+          image: {{ full_image }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8084
+          volumeMounts:
+            - name: check-orders-micro-app-logs-pv
+              mountPath: /opt/logs/check-orders-micro-app
+      imagePullSecrets:
+        - name: regcred
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: check-orders-micro-app-logs-pv-{{ k8s_namespace }}
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/opt/logs/check-orders-micro-app-{{ k8s_namespace }}"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: check-orders-micro-app-logs-pvc-{{ k8s_namespace }}
+  namespace: {{ k8s_namespace }}
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: check-orders-micro-app-service
+  namespace: {{ k8s_namespace }}
+  labels:
+    app: check-orders-micro-app
+    service: check-orders-micro-app
+spec:
+  type: NodePort
+  ports:
+    - port: 8084
+      targetPort: 8084
+      nodePort: {{ nodeport }}
+      name: http
+  selector:
+    app: check-orders-micro-app
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: manual
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
